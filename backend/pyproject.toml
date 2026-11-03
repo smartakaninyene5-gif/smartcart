@@ -1,0 +1,26 @@
+[project]
+name = "smartcart"
+version = "0.1.0"
+description = "Evidence-first AI purchasing agent - deterministic core"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi==0.121.2",
+  "uvicorn[standard]==0.41.0",
+  "pydantic==2.12.4",
+  "pydantic-settings==2.13.0",
+  "sqlalchemy==2.0.44",
+  "httpx==0.28.1",
+  "alembic==1.17.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.setuptools]
+packages = ["app"]

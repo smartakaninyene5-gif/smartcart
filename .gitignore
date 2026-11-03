@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.python-version
+
+# Environment / secrets
+# Never commit real credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# SQLite databases and temporary database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Logs
+*.log
+logs/
+
+# Test / coverage artifacts
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+.cache/
+
+# Node
+node_modules/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Build artefacts
+dist/
+build/
+*.egg-info/
+.next/

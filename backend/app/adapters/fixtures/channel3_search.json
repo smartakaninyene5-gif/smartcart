@@ -1,0 +1,144 @@
+{
+  "query": "wireless noise cancelling headphones under 150",
+  "as_of": "2026-10-31T07:54:39.899Z",
+  "products": [
+    {
+      "id": "mock-sony-ch730",
+      "title": "Sony WH-CH730N Wireless Noise Cancelling Headphones",
+      "brands": [{ "id": "sony", "name": "Sony" }],
+      "description": "Mock fixture shaped like a real Channel3 payload. Over-ear wireless headphones with noise cancelling.",
+      "images": [
+        { "url": "https://cdn.trychannel3.com/mock/sony-ch730.jpg", "is_main_image": true, "alt_text": "Sony headphones" }
+      ],
+      "category": { "slug": "over-ear-headphones", "title": "Over-Ear Headphones" },
+      "structured_attributes": {
+        "connectivity-technology": ["Bluetooth", "Wireless"],
+        "battery-size": ["Built-in battery"]
+      },
+      "variants": { "options": [], "selected": [] },
+      "offers": [
+        {
+          "url": "https://buy.trychannel3.com/mock-sony-ch730-bestbuy",
+          "domain": "bestbuy.com",
+          "merchant_name": "Best Buy",
+          "price": { "price": 128.0, "compare_at_price": 178.0, "currency": "USD" },
+          "availability": "InStock",
+          "condition": "New",
+          "shipping_cost": 0.0
+        },
+        {
+          "url": "https://buy.trychannel3.com/mock-sony-ch730-amazon",
+          "domain": "amazon.com",
+          "merchant_name": "Amazon",
+          "price": { "price": 132.5, "currency": "USD" },
+          "availability": "InStock",
+          "condition": "New",
+          "shipping_cost": 0.0
+        }
+      ]
+    },
+    {
+      "id": "mock-beats-studio3",
+      "title": "Beats Studio3 Wireless Noise Cancelling Headphones",
+      "brands": [{ "id": "beats", "name": "Beats" }],
+      "description": "Mock fixture with multiple offers, including a marketplace listing with unknown condition.",
+      "images": [
+        { "url": "https://cdn.trychannel3.com/mock/beats-studio3.jpg", "is_main_image": true }
+      ],
+      "category": { "slug": "over-ear-headphones", "title": "Over-Ear Headphones" },
+      "structured_attributes": { "noise-cancellation-technology": ["Active noise cancellation (ANC)"] },
+      "variants": {
+        "options": [
+          { "name": "Color", "values": [{ "label": "Matte Black", "exists": true, "available": "InStock", "product_id": "mock-beats-studio3-black" }] }
+        ],
+        "selected": [{ "name": "Color", "label": "Matte Black" }]
+      },
+      "offers": [
+        {
+          "url": "https://buy.trychannel3.com/mock-beats-studio3-costco",
+          "domain": "costco.com",
+          "merchant_name": "Costco",
+          "price": { "price": 99.99, "currency": "USD" },
+          "availability": "InStock",
+          "condition": "New",
+          "shipping_cost": 0.0
+        },
+        {
+          "url": "https://buy.trychannel3.com/mock-beats-studio3-backmarket",
+          "domain": "backmarket.com",
+          "merchant_name": "Back Market",
+          "price": { "price": 89.0, "compare_at_price": 349.0, "currency": "USD" },
+          "availability": "InStock",
+          "condition": null,
+          "shipping_cost": 4.99
+        },
+        {
+          "url": "https://buy.trychannel3.com/mock-beats-studio3-bestbuy",
+          "domain": "bestbuy.com",
+          "merchant_name": "Best Buy",
+          "price": { "price": 199.99, "currency": "USD" },
+          "availability": "InStock",
+          "condition": "New",
+          "shipping_cost": 0.0
+        }
+      ]
+    },
+    {
+      "id": "mock-jbl-tune770",
+      "title": "JBL Tune 770NC Wireless Over-Ear Headphones",
+      "brands": [{ "id": "jbl", "name": "JBL" }, { "id": "bestbuy", "name": "Best Buy" }],
+      "description": "Mock fixture deliberately listing a retailer in the brands array, as the live API does.",
+      "images": [{ "url": "https://cdn.trychannel3.com/mock/jbl-tune770.jpg", "is_main_image": true }],
+      "category": { "slug": "over-ear-headphones", "title": "Over-Ear Headphones" },
+      "structured_attributes": { "connectivity-technology": ["Bluetooth", "Wireless"] },
+      "variants": { "options": [], "selected": [] },
+      "offers": [
+        {
+          "url": "https://buy.trychannel3.com/mock-jbl-tune770-bestbuy",
+          "domain": "bestbuy.com",
+          "merchant_name": "Best Buy",
+          "price": { "price": 99.95, "currency": "USD" },
+          "availability": "InStock",
+          "condition": "New",
+          "shipping_cost": 0.0
+        },
+        {
+          "url": "https://buy.trychannel3.com/mock-jbl-tune770-walmart",
+          "domain": "walmart.com",
+          "merchant_name": "Walmart",
+          "price": { "price": 94.0, "currency": "USD" },
+          "availability": "OutOfStock",
+          "condition": "New",
+          "shipping_cost": 0.0
+        }
+      ]
+    },
+    {
+      "id": "mock-anker-q30",
+      "title": "Anker Soundcore Life Q30 Hybrid ANC Headphones",
+      "brands": [{ "id": "anker", "name": "Anker" }],
+      "description": "Mock fixture containing a malformed offer (no price) that must be skipped, not invented.",
+      "images": [],
+      "category": { "slug": "over-ear-headphones", "title": "Over-Ear Headphones" },
+      "structured_attributes": {},
+      "variants": { "options": [], "selected": [] },
+      "offers": [
+        {
+          "url": "https://buy.trychannel3.com/mock-anker-q30-amazon",
+          "domain": "amazon.com",
+          "merchant_name": "Amazon",
+          "price": { "price": 79.99, "currency": "USD" },
+          "availability": "InStock",
+          "condition": "New",
+          "shipping_cost": 0.0
+        },
+        {
+          "url": "https://buy.trychannel3.com/mock-anker-q30-broken",
+          "domain": "unknown-store.example",
+          "availability": "InStock",
+          "condition": "New"
+        }
+      ]
+    }
+  ]
+}
