@@ -10,7 +10,7 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import SecretStr, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.domain.enums import Condition, DataMode
@@ -24,6 +24,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
+        populate_by_name=True,
     )
 
     env: Literal["dev", "test", "sandbox", "production"] = "dev"
@@ -31,7 +32,15 @@ class Settings(BaseSettings):
     demo_user_id: str = "user_demo"
 
     product_source: Literal["mock", "channel3"] = "mock"
-    channel3_api_key: SecretStr | None = None
+    # Accepts SMARTCART_CHANNEL3_API_KEY (documented) and the bare
+    # CHANNEL3_API_KEY name actually used in the deployment .env file.
+    channel3_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "smartcart_channel3_api_key",
+            "channel3_api_key",
+        ),
+    )
     channel3_base_url: str = "https://api.trychannel3.com"
     channel3_timeout_seconds: float = 20.0
 

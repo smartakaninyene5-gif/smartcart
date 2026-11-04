@@ -14,7 +14,8 @@ def build_product_source(settings: Settings, clock) -> ProductSource:
     if settings.product_source == "channel3":
         if not settings.channel3_configured:
             raise SourceNotConfigured(
-                "SMARTCART_PRODUCT_SOURCE=channel3 requires SMARTCART_CHANNEL3_API_KEY"
+                "SMARTCART_PRODUCT_SOURCE=channel3 requires "
+                "SMARTCART_CHANNEL3_API_KEY (or CHANNEL3_API_KEY)"
             )
         return Channel3RestSource(
             settings.channel3_api_key.get_secret_value(),
