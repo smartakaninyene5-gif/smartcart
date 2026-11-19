@@ -44,10 +44,41 @@ class Settings(BaseSettings):
     channel3_base_url: str = "https://api.trychannel3.com"
     channel3_timeout_seconds: float = 20.0
 
-    ai_provider: Literal["none", "gemini"] = "none"
-    gemini_api_key: SecretStr | None = None
-    gemini_model: str = "gemini-2.5-flash"
+    # "auto" enables Gemini whenever a key is present; "none" always disables.
+    ai_provider: Literal["none", "auto", "gemini"] = "auto"
+    # Accepts SMARTCART_GEMINI_API_KEY (documented) and the bare GEMINI_API_KEY
+    # name actually used in the deployment .env file.
+    gemini_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "smartcart_gemini_api_key",
+            "gemini_api_key",
+        ),
+    )
+    gemini_model: str = Field(
+        default="gemini-2.5-flash",
+        validation_alias=AliasChoices(
+            "smartcart_gemini_model",
+            "gemini_model",
+        ),
+    )
     gemini_base_url: str = "https://generativelanguage.googleapis.com"
+    gemini_timeout_seconds: float = 60.0
+
+    # KERNEL browser research (targeted product-page investigation).
+    kernel_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "smartcart_kernel_api_key",
+            "kernel_api_key",
+        ),
+    )
+    kernel_base_url: str = "https://api.onkernel.com"
+    kernel_timeout_seconds: float = 90.0
+    # Maximum number of products the shopping workflow may investigate with a
+    # browser session per search, and the max time a single page may take.
+    max_research_products: int = 3
+    max_page_text_length: int = 20000
 
     paypal_env: Literal["sandbox", "live"] = "sandbox"
     paypal_client_id: SecretStr | None = None
@@ -70,6 +101,7 @@ class Settings(BaseSettings):
     @field_validator(
         "channel3_api_key",
         "gemini_api_key",
+        "kernel_api_key",
         "paypal_client_id",
         "paypal_client_secret",
         mode="before",
@@ -90,7 +122,17 @@ class Settings(BaseSettings):
 
     @property
     def gemini_configured(self) -> bool:
-        return self.ai_provider == "gemini" and self.gemini_api_key is not None
+        if self.ai_provider == "none":
+            return False
+        return self.gemini_api_key is not None
+
+    @property
+    def kernel_configured(self) -> bool:
+        return self.kernel_api_key is not None
+
+    @property
+    def effective_ai_provider(self) -> str:
+        return "gemini" if self.gemini_configured else "none"
 
     @property
     def paypal_configured(self) -> bool:

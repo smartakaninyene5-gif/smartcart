@@ -15,6 +15,7 @@ from app.domain.enums import Availability, Condition, DataMode, GuardOutcome
 from app.domain.guard import GuardDecision
 from app.domain.models import Offer, Product, Quote, RequirementSet
 from app.domain.money import currency_code, money
+from app.shopping.models import ShoppingUnderstanding
 
 
 class SearchRequest(BaseModel):
@@ -112,6 +113,36 @@ class PaymentOrderRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     approval_id: str = Field(min_length=1, max_length=64)
+
+
+class ShoppingUnderstandRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(min_length=3, max_length=4000)
+
+
+class ShoppingConfirmRequest(BaseModel):
+    """The user's corrected/confirmed reading of their request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    request_id: str = Field(min_length=1, max_length=64)
+    understanding: ShoppingUnderstanding
+
+
+class ShoppingSearchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    request_id: str = Field(min_length=1, max_length=64)
+    research: bool = True
+
+
+class ShoppingResearchRequest(BaseModel):
+    """Internal targeted-research trigger; bounded to this search's products."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    product_ids: list[str] | None = Field(default=None, max_length=20)
 
 
 def offer_json(offer: Offer, *, title: str | None = None) -> dict[str, Any]:

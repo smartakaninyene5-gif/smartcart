@@ -35,6 +35,9 @@ from app.persistence.tables import (
     Product as ProductRow,
     PurchaseIntent,
     QuoteRecord,
+    ShoppingResearch,
+    ShoppingRequest,
+    ShoppingSearch,
     TransactionEvent,
     User,
 )
@@ -723,3 +726,157 @@ def evidence_is_fact(kind: str, trust: str) -> bool:
         return TrustLevel(trust).is_fact
     except ValueError:
         return False
+
+
+class ShoppingRepository:
+    """Persistence for shopping requests, searches and targeted research."""
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    # ------------------------------------------------------------- requests
+
+    def create_request(
+        self,
+        user_id: str,
+        raw_text: str,
+        understanding_json: dict[str, Any],
+        clarifications: list[str],
+    ) -> ShoppingRequest:
+        row = ShoppingRequest(
+            id=new_id("sreq"),
+            user_id=user_id,
+            raw_text=raw_text[:4000],
+            status="understood",
+            understanding_json=understanding_json,
+            clarifications=clarifications,
+        )
+        self.session.add(row)
+        self.session.flush()
+        return row
+
+    def get_request(self, user_id: str, request_id: str) -> ShoppingRequest | None:
+        row = self.session.get(ShoppingRequest, request_id)
+        if row is None or row.user_id != user_id:
+            return None
+        return row
+
+    def list_requests(self, user_id: str, limit: int = 20) -> list[ShoppingRequest]:
+        rows = self.session.scalars(
+            select(ShoppingRequest)
+            .where(ShoppingRequest.user_id == user_id)
+            .order_by(ShoppingRequest.created_at.desc())
+            .limit(min(limit, 50))
+        ).all()
+        return list(rows)
+
+    def update_understanding(
+        self,
+        row: ShoppingRequest,
+        understanding_json: dict[str, Any],
+        clarifications: list[str],
+    ) -> None:
+        row.understanding_json = understanding_json
+        row.clarifications = clarifications
+        row.status = "understood"
+        self.session.flush()
+
+    def confirm_request(
+        self,
+        row: ShoppingRequest,
+        criteria_json: dict[str, Any],
+        confirmed_at: datetime,
+    ) -> None:
+        row.confirmed_json = criteria_json
+        row.confirmed_at = as_utc(confirmed_at)
+        row.status = "confirmed"
+        self.session.flush()
+
+    # -------------------------------------------------------------- searches
+
+    def create_search(
+        self,
+        *,
+        user_id: str,
+        request_id: str,
+        query_text: str,
+        criteria_json: dict[str, Any],
+        result_json: dict[str, Any],
+        data_mode: str,
+        source: str,
+        research_performed: int,
+        as_of: datetime | None,
+    ) -> ShoppingSearch:
+        row = ShoppingSearch(
+            id=new_id("ssea"),
+            user_id=user_id,
+            request_id=request_id,
+            query_text=query_text[:300],
+            criteria_json=criteria_json,
+            result_json=result_json,
+            data_mode=data_mode,
+            source=source,
+            research_performed=research_performed,
+            as_of=as_utc(as_of) if as_of else None,
+        )
+        self.session.add(row)
+        self.session.flush()
+        return row
+
+    def get_search(self, user_id: str, search_id: str) -> ShoppingSearch | None:
+        row = self.session.get(ShoppingSearch, search_id)
+        if row is None or row.user_id != user_id:
+            return None
+        return row
+
+    def update_search_result(self, row: ShoppingSearch, result_json: dict[str, Any],
+                             research_performed: int) -> None:
+        row.result_json = result_json
+        row.research_performed = research_performed
+        self.session.flush()
+
+    # -------------------------------------------------------------- research
+
+    def create_research(
+        self,
+        *,
+        user_id: str,
+        search_id: str,
+        product_id: str,
+        offer_id: str,
+        url: str,
+        kernel_session_id: str,
+        fields: list[str],
+        reasons: list[str],
+        findings: list[dict[str, Any]],
+        limitations: list[str],
+        success: bool,
+    ) -> ShoppingResearch:
+        row = ShoppingResearch(
+            id=new_id("sres"),
+            user_id=user_id,
+            search_id=search_id,
+            product_id=product_id,
+            offer_id=offer_id,
+            url=url,
+            kernel_session_id=kernel_session_id,
+            fields=fields,
+            reasons=reasons,
+            findings=findings,
+            limitations=limitations,
+            success=success,
+        )
+        self.session.add(row)
+        self.session.flush()
+        return row
+
+    def list_research(self, user_id: str, search_id: str) -> list[ShoppingResearch]:
+        rows = self.session.scalars(
+            select(ShoppingResearch)
+            .where(
+                ShoppingResearch.user_id == user_id,
+                ShoppingResearch.search_id == search_id,
+            )
+            .order_by(ShoppingResearch.created_at)
+        ).all()
+        return list(rows)

@@ -241,6 +241,64 @@ class JournalEvent(Base):
     recorded_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
 
+class ShoppingRequest(Base):
+    """A user's natural-language shopping request and its lifecycle."""
+
+    __tablename__ = "shopping_requests"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), ForeignKey("users.id"), index=True)
+    raw_text: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(24), default="understood")
+    understanding_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    clarifications: Mapped[list[str]] = mapped_column(JSON, default=list)
+    confirmed_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    understood_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    confirmed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)
+
+
+class ShoppingSearch(Base):
+    """One executed shopping search with its full deterministic result."""
+
+    __tablename__ = "shopping_searches"
+    __table_args__ = (Index("ix_shopping_searches_user", "user_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), ForeignKey("users.id"), index=True)
+    request_id: Mapped[str] = mapped_column(String(64), ForeignKey("shopping_requests.id"), index=True)
+    query_text: Mapped[str] = mapped_column(String(300))
+    criteria_json: Mapped[dict[str, Any]] = mapped_column(JSON)
+    result_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    data_mode: Mapped[str] = mapped_column(String(8), default="MOCK")
+    source: Mapped[str] = mapped_column(String(32), default="mock")
+    research_performed: Mapped[int] = mapped_column(Integer, default=0)
+    as_of: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+
+
+class ShoppingResearch(Base):
+    """One targeted KERNEL research action and what it found."""
+
+    __tablename__ = "shopping_research"
+    __table_args__ = (Index("ix_shopping_research_search", "search_id"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), ForeignKey("users.id"), index=True)
+    search_id: Mapped[str] = mapped_column(String(64), ForeignKey("shopping_searches.id"), index=True)
+    product_id: Mapped[str] = mapped_column(String(128))
+    offer_id: Mapped[str] = mapped_column(String(180))
+    url: Mapped[str] = mapped_column(Text)
+    kernel_session_id: Mapped[str] = mapped_column(String(128))
+    fields: Mapped[list[str]] = mapped_column(JSON, default=list)
+    reasons: Mapped[list[str]] = mapped_column(JSON, default=list)
+    findings: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    limitations: Mapped[list[str]] = mapped_column(JSON, default=list)
+    success: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+
+
 __all__ = [
     "User",
     "Product",
@@ -254,4 +312,7 @@ __all__ = [
     "TransactionEvent",
     "IdempotencyKey",
     "JournalEvent",
+    "ShoppingRequest",
+    "ShoppingSearch",
+    "ShoppingResearch",
 ]

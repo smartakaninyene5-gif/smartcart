@@ -69,6 +69,90 @@ class LlmNotConfigured(LlmError):
     pass
 
 
+class LlmAuthError(LlmError):
+    pass
+
+
+class LlmRateLimited(LlmError):
+    pass
+
+
+class LlmTimeout(LlmError):
+    pass
+
+
+class LlmUnavailable(LlmError):
+    pass
+
+
+class LlmModelUnavailable(LlmError):
+    pass
+
+
+class LlmMalformed(LlmError):
+    pass
+
+
+class KernelError(Exception):
+    """Base class for KERNEL browser-research failures."""
+
+
+class KernelNotConfigured(KernelError):
+    pass
+
+
+class KernelAuthError(KernelError):
+    pass
+
+
+class KernelRateLimited(KernelError):
+    pass
+
+
+class KernelTimeout(KernelError):
+    pass
+
+
+class KernelUnavailable(KernelError):
+    pass
+
+
+class KernelMalformed(KernelError):
+    pass
+
+
+class KernelUnsafeUrl(KernelError):
+    """The requested URL failed safety validation (never navigated)."""
+
+
+@dataclass(frozen=True)
+class KernelBrowserSession:
+    session_id: str
+    deleted: bool = False
+
+
+@dataclass(frozen=True)
+class KernelPage:
+    """What the browser observed on one page. Content is untrusted data."""
+
+    url: str
+    final_url: str
+    title: str
+    text: str
+    redirected: bool
+
+
+@dataclass
+class KernelResearchResult:
+    session_id: str
+    pages: list[KernelPage] = field(default_factory=list)
+    limitations: list[str] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.pages)
+
+
 class LlmClient(Protocol):
     name: str
 
@@ -128,6 +212,22 @@ class PaymentGateway(Protocol):
     def capture(self, provider_order_id: str, idempotency_key: str) -> CaptureResult: ...
 
     def verify_webhook(self, headers: dict[str, str], body: bytes) -> VerifiedEvent: ...
+
+
+class KernelBrowserClient(Protocol):
+    name: str
+
+    def create_session(self) -> KernelBrowserSession: ...
+
+    def visit(self, session_id: str, url: str) -> KernelPage:
+        """Navigate to a validated public URL and read title + visible text.
+
+        Read-only: implementations must never generate actions (form fill,
+        clicks, typing); page content is returned, never executed.
+        """
+        ...
+
+    def delete_session(self, session_id: str) -> None: ...
 
 
 class Clock(Protocol):

@@ -9,7 +9,12 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.adapters import build_llm_client, build_payment_gateway, build_product_source
+from app.adapters import (
+    build_kernel_client,
+    build_llm_client,
+    build_payment_gateway,
+    build_product_source,
+)
 from app.adapters.clock import SystemClock
 from app.application.errors import AppError
 from app.config import Settings, get_settings
@@ -25,6 +30,7 @@ class Container:
         product_source=None,
         payment_gateway=None,
         llm=None,
+        kernel_client=None,
     ) -> None:
         self.settings = settings
         self.clock = clock or SystemClock()
@@ -34,6 +40,9 @@ class Container:
         self.product_source = product_source or build_product_source(settings, self.clock)
         self.payment_gateway = payment_gateway if payment_gateway is not None else build_payment_gateway(settings)
         self.llm = llm if llm is not None else build_llm_client(settings)
+        # KERNEL research client (None when not configured); may be injected
+        # for tests. Not exposed as an API: only the shopping workflow uses it.
+        self.kernel_client = kernel_client if kernel_client is not None else build_kernel_client(settings)
 
     def session(self):
         return self.session_factory()
@@ -46,6 +55,7 @@ def create_app(
     product_source=None,
     payment_gateway=None,
     llm=None,
+    kernel_client=None,
     frontend_dir: Path | None = None,
 ) -> FastAPI:
     from app.api.routes import router as api_router
@@ -63,6 +73,7 @@ def create_app(
         product_source=product_source,
         payment_gateway=payment_gateway,
         llm=llm,
+        kernel_client=kernel_client,
     )
     app.state.settings = settings
 

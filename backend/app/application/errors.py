@@ -97,3 +97,22 @@ class WebhookRejected(AppError):
 class SourceFailure(AppError):
     code = "SOURCE_FAILURE"
     http_status = 503
+
+
+class AiUnavailable(AppError):
+    """Gemini could not be used (auth, rate limit, malformed, model missing)."""
+
+    code = "AI_UNAVAILABLE"
+    http_status = 502
+
+
+class AiNotConfigured(AppError):
+    code = "AI_NOT_CONFIGURED"
+    http_status = 503
+
+
+class ShoppingState(AppError):
+    """Shopping workflow used out of order (e.g. confirm before understand)."""
+
+    code = "SHOPPING_STATE_INVALID"
+    http_status = 409

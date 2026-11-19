@@ -70,3 +70,98 @@ class FakeGateway:
             signature_verified=True,
             payload=event,
         )
+
+
+class FakeLlm:
+    """Scripted structured-output LLM for deterministic shopping tests.
+
+    ``responses`` is a queue of dicts; when empty the fake fails with
+    ``LlmUnavailable`` so advisory fallbacks are exercised deterministically.
+    An entry may also be an Exception instance to raise, or a callable taking
+    (prompt, schema) and returning a dict.
+    """
+
+    name = "gemini"
+
+    def __init__(self, responses: list | None = None) -> None:
+        self.responses = list(responses or [])
+        self.calls: list[dict] = []
+
+    def structured(self, *, prompt: str, schema: dict) -> dict:
+        from app.ports import LlmUnavailable
+
+        self.calls.append({"prompt": prompt, "schema": schema})
+        if not self.responses:
+            raise LlmUnavailable("no scripted Gemini response")
+        item = self.responses.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        if callable(item):
+            return item(prompt, schema)
+        return item
+
+
+class FakeKernel:
+    """In-process KERNEL stand-in: one deterministic page, no network.
+
+    Records created/deleted sessions and every visited URL so tests can prove
+    cleanup and bounded navigation. Session ids are synthetic; no tokens or
+    credentials are ever produced.
+    """
+
+    name = "kernel"
+
+    def __init__(
+        self,
+        *,
+        page_text: str = "",
+        title: str = "Example Product Page",
+        final_url: str | None = None,
+        emulate_redirect: bool = False,
+        fail_create: bool = False,
+        fail_visit: bool = False,
+        fail_delete: bool = False,
+    ) -> None:
+        self.page_text = page_text
+        self.title = title
+        self.final_url = final_url
+        self.emulate_redirect = emulate_redirect
+        self.fail_create = fail_create
+        self.fail_visit = fail_visit
+        self.fail_delete = fail_delete
+        self.created: list[str] = []
+        self.deleted: list[str] = []
+        self.visited: list[str] = []
+
+    def create_session(self):
+        from app.ports import KernelBrowserSession, KernelUnavailable
+
+        if self.fail_create:
+            raise KernelUnavailable("fake session creation failure")
+        session_id = f"sess_fake_{len(self.created) + 1}"
+        self.created.append(session_id)
+        return KernelBrowserSession(session_id=session_id)
+
+    def visit(self, session_id: str, url: str):
+        from app.ports import KernelPage, KernelUnavailable
+
+        if self.fail_visit:
+            raise KernelUnavailable("fake navigation failure")
+        if session_id not in self.created:
+            raise KernelUnavailable("fake session does not exist")
+        self.visited.append(url)
+        final_url = self.final_url or (url.replace("://", "://www.") if self.emulate_redirect else url)
+        return KernelPage(
+            url=url,
+            final_url=final_url,
+            title=self.title,
+            text=self.page_text,
+            redirected=bool(self.emulate_redirect),
+        )
+
+    def delete_session(self, session_id: str) -> None:
+        from app.ports import KernelUnavailable
+
+        if self.fail_delete:
+            raise KernelUnavailable("fake delete failure")
+        self.deleted.append(session_id)

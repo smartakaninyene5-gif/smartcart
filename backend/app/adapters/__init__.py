@@ -4,10 +4,17 @@ from __future__ import annotations
 
 from app.adapters.channel3_rest import Channel3RestSource
 from app.adapters.gemini import GeminiLlmClient
+from app.adapters.kernel_browser import KernelBrowserClient
 from app.adapters.mock_source import MockProductSource
 from app.adapters.paypal import PayPalGateway
 from app.config import Settings
-from app.ports import LlmClient, PaymentGateway, ProductSource, SourceNotConfigured
+from app.ports import (
+    KernelBrowserClient,
+    LlmClient,
+    PaymentGateway,
+    ProductSource,
+    SourceNotConfigured,
+)
 
 
 def build_product_source(settings: Settings, clock) -> ProductSource:
@@ -33,6 +40,19 @@ def build_llm_client(settings: Settings) -> LlmClient | None:
         settings.gemini_api_key.get_secret_value(),
         model=settings.gemini_model,
         base_url=settings.gemini_base_url,
+        timeout=settings.gemini_timeout_seconds,
+    )
+
+
+def build_kernel_client(settings: Settings) -> KernelBrowserClient | None:
+    """KERNEL research client, or None when no key is configured."""
+    if not settings.kernel_configured:
+        return None
+    return KernelBrowserClient(
+        settings.kernel_api_key.get_secret_value(),
+        base_url=settings.kernel_base_url,
+        timeout=settings.kernel_timeout_seconds,
+        max_page_text_length=settings.max_page_text_length,
     )
 
 

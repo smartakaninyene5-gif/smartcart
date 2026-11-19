@@ -15,6 +15,10 @@ from app.api.schemas import (
     QuoteRequest,
     RejectRequest,
     SearchRequest,
+    ShoppingConfirmRequest,
+    ShoppingResearchRequest,
+    ShoppingSearchRequest,
+    ShoppingUnderstandRequest,
     approval_json,
     decision_json,
     evidence_json,
@@ -29,6 +33,13 @@ from app.application.discovery import search_products
 from app.application.errors import NotFound
 from app.application.payments import handle_paypal_webhook, capture_payment, prepare_payment
 from app.application.quotes import evidence_for_quote, prepare_quote
+from app.application.shopping import (
+    confirm_request,
+    get_search_result,
+    run_shopping_search,
+    targeted_research,
+    understand_request,
+)
 from app.container import Container
 from app.domain.enums import DataMode
 from app.domain.models import RequirementSet
@@ -58,7 +69,9 @@ def health(
         "data_mode": settings.data_mode.value,
         "product_source": settings.product_source,
         "channel3_configured": settings.channel3_configured,
-        "ai_provider": settings.ai_provider,
+        "ai_provider": settings.effective_ai_provider,
+        "ai_configured": settings.gemini_configured,
+        "kernel_configured": settings.kernel_configured,
         "paypal_configured": settings.paypal_configured,
         "paypal_environment": settings.paypal_env,
         "guard_policy_version": settings.guard_policy.version,
@@ -403,3 +416,119 @@ def read_evidence(
     payload = evidence_json(row)
     payload["payload"] = row.payload
     return payload
+
+
+# --------------------------------------------------------------------------
+# Shopping intelligence: understand -> confirm -> search -> targeted research
+# --------------------------------------------------------------------------
+
+
+@router.post("/shopping/understand", tags=["shopping"])
+def shopping_understand(
+    payload: ShoppingUnderstandRequest,
+    user_id: str = Depends(get_user_id),
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+    correlation_id: str = Depends(get_correlation_id),
+) -> dict[str, Any]:
+    outcome = understand_request(
+        session,
+        user_id=user_id,
+        text=payload.text,
+        llm=container.llm,
+        clock=container.clock,
+        environment=container.settings.env,
+        correlation_id=correlation_id,
+    )
+    return {
+        "request_id": outcome.request_id,
+        "status": outcome.status,
+        "understanding": outcome.understanding.model_dump(mode="json"),
+        "clarifications": outcome.clarifications,
+        "next_action": "confirm_or_clarify" if outcome.clarifications else "confirm",
+    }
+
+
+@router.post("/shopping/confirm", tags=["shopping"])
+def shopping_confirm(
+    payload: ShoppingConfirmRequest,
+    user_id: str = Depends(get_user_id),
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+    correlation_id: str = Depends(get_correlation_id),
+) -> dict[str, Any]:
+    outcome = confirm_request(
+        session,
+        user_id=user_id,
+        request_id=payload.request_id,
+        payload=payload.understanding.model_dump(mode="json"),
+        clock=container.clock,
+        environment=container.settings.env,
+        correlation_id=correlation_id,
+    )
+    return {
+        "request_id": outcome.request_id,
+        "status": outcome.status,
+        "criteria": outcome.criteria.model_dump(mode="json"),
+        "next_action": "search",
+    }
+
+
+@router.post("/shopping/search", tags=["shopping"])
+def shopping_search(
+    payload: ShoppingSearchRequest,
+    user_id: str = Depends(get_user_id),
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+    correlation_id: str = Depends(get_correlation_id),
+) -> dict[str, Any]:
+    outcome = run_shopping_search(
+        session,
+        user_id=user_id,
+        request_id=payload.request_id,
+        source=container.product_source,
+        llm=container.llm,
+        kernel_client=container.kernel_client,
+        settings=container.settings,
+        clock=container.clock,
+        environment=container.settings.env,
+        correlation_id=correlation_id,
+        do_research=payload.research,
+    )
+    return outcome.result
+
+
+@router.get("/shopping/searches/{search_id}", tags=["shopping"])
+def shopping_search_result(
+    search_id: str,
+    user_id: str = Depends(get_user_id),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    return get_search_result(session, user_id=user_id, search_id=search_id)
+
+
+@router.post("/shopping/searches/{search_id}/research", tags=["shopping"])
+def shopping_search_research(
+    search_id: str,
+    payload: ShoppingResearchRequest,
+    user_id: str = Depends(get_user_id),
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+    correlation_id: str = Depends(get_correlation_id),
+) -> dict[str, Any]:
+    """Internal workflow: targeted KERNEL research for a stored search.
+
+    Not a browser-control endpoint: only previously-discovered product URLs
+    can be investigated, and every field/result is evidence-tagged.
+    """
+    return targeted_research(
+        session,
+        user_id=user_id,
+        search_id=search_id,
+        product_ids=payload.product_ids,
+        kernel_client=container.kernel_client,
+        settings=container.settings,
+        clock=container.clock,
+        environment=container.settings.env,
+        correlation_id=correlation_id,
+    )
